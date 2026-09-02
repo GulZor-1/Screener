@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Screener">
+<meta name="description" content="Multi-framework Indian equity screener — Buffett, Lynch, Graham, Greenblatt, Piotroski">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Indian Equity Screener</title>
+<style>
+/* ── RESET & BASE ─────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0f1e;
+  --bg2:#111827;
+  --bg3:#1a2235;
+  --surface:#1e2a3a;
+  --surface2:#243044;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.12);
+  --text:#e8edf5;
+  --text2:#8b96a8;
+  --text3:#55627a;
+  --green:#1db374;
+  --green2:#0e9b5e;
+  --gold:#f5c842;
+  --red:#e85555;
+  --blue:#4a8ef5;
+  --purple:#9f7aea;
+  --orange:#f5924a;
+  --r:12px;
+  --r-sm:8px;
+  --safe-top:env(safe-area-inset-top, 0px);
+  --safe-bot:env(safe-area-inset-bottom, 0px);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5}
+
+/* ── LAYOUT SHELL ─────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100%;padding-top:var(--safe-top)}
+#topbar{flex-shrink:0;background:var(--bg2);border-bottom:0.5px solid var(--border);padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+#topbar-title{font-size:15px;font-weight:600;letter-spacing:-0.3px}
+#topbar-sub{font-size:10px;color:var(--green);font-weight:500}
+#content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#bottomnav{flex-shrink:0;background:var(--bg2);border-top:0.5px solid var(--border);display:flex;padding-bottom:var(--safe-bot)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;background:none;border:none;color:var(--text3);font-size:10px;font-weight:500;cursor:pointer;transition:color 0.15s}
+.nav-btn svg{width:22px;height:22px;stroke-width:1.8;fill:none;stroke:currentColor}
+.nav-btn.active{color:var(--green)}
+
+/* ── SCREEN SYSTEM ────────────────────────────────────── */
+.screen{display:none;padding:16px 16px calc(16px + var(--safe-bot))}
+.screen.active{display:block}
+
+/* ── COMMON COMPONENTS ────────────────────────────────── */
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px}
+.pill{font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;display:inline-block}
+.pill-g{background:rgba(29,179,116,0.15);color:var(--green);border:0.5px solid rgba(29,179,116,0.3)}
+.pill-r{background:rgba(232,85,85,0.15);color:var(--red);border:0.5px solid rgba(232,85,85,0.3)}
+.pill-y{background:rgba(245,200,66,0.15);color:var(--gold);border:0.5px solid rgba(245,200,66,0.3)}
+.pill-b{background:rgba(74,142,245,0.15);color:var(--blue);border:0.5px solid rgba(74,142,245,0.3)}
+.flag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;display:inline-block}
+.f-pass{background:rgba(29,179,116,0.15);color:var(--green)}
+.f-warn{background:rgba(245,200,66,0.15);color:var(--gold)}
+.f-fail{background:rgba(232,85,85,0.15);color:var(--red)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 20px;border-radius:var(--r-sm);font-size:14px;font-weight:500;border:none;cursor:pointer;transition:opacity 0.15s;width:100%}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:disabled{opacity:0.45;cursor:not-allowed}
+.btn-outline{background:var(--surface2);color:var(--text);border:0.5px solid var(--border2)}
+.input{width:100%;padding:12px 14px;font-size:14px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--r-sm);color:var(--text);outline:none;-webkit-appearance:none;appearance:none}
+.input:focus{border-color:var(--green)}
+.input::placeholder{color:var(--text3)}
+.divider{height:0.5px;background:var(--border);margin:14px 0}
+.row{display:flex;align-items:center;gap:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.kc{background:var(--surface2);border-radius:var(--r-sm);padding:10px 10px}
+.kc-lbl{font-size:10px;color:var(--text2);margin-bottom:2px}
+.kc-val{font-size:14px;font-weight:600}
+.kc-sub{font-size:10px;color:var(--text3);margin-top:1px}
+
+/* spinner */
+.spinner{width:20px;height:20px;border:2px solid rgba(29,179,116,0.3);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* toast */
+#toast{position:fixed;bottom:calc(70px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 18px;font-size:13px;opacity:0;transition:all 0.25s;pointer-events:none;white-space:nowrap;z-index:999}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── SCREEN 1: ANALYSE ────────────────────────────────── */
+.fw-grid{display:flex;gap:7px;flex-wrap:wrap}
+.fw-chip{font-size:12px;padding:6px 12px;border-radius:20px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-weight:500;transition:all 0.12s;user-select:none}
+.fw-chip.on-B{background:rgba(74,142,245,0.2);color:#7ab3ff;border-color:rgba(74,142,245,0.4)}
+.fw-chip.on-L{background:rgba(29,179,116,0.2);color:#5ce8a5;border-color:rgba(29,179,116,0.4)}
+.fw-chip.on-G{background:rgba(245,200,66,0.2);color:#ffd862;border-color:rgba(245,200,66,0.4)}
+.fw-chip.on-Gn{background:rgba(159,122,234,0.2);color:#c9b0ff;border-color:rgba(159,122,234,0.4)}
+.fw-chip.on-P{background:rgba(232,85,85,0.2);color:#ff9c9c;border-color:rgba(232,85,85,0.4)}
+.fw-chip.on-AV{background:rgba(255,255,255,0.1);color:#c8d0dc;border-color:rgba(255,255,255,0.2)}
+.preset-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.preset-row::-webkit-scrollbar{display:none}
+.preset{font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.preset.active{background:rgba(29,179,116,0.2);color:var(--green);border-color:rgba(29,179,116,0.4)}
+.depth-row{display:flex;gap:6px}
+.depth-btn{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;border-radius:var(--r-sm);border:0.5px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer}
+.depth-btn.active{background:rgba(29,179,116,0.15);color:var(--green);border-color:rgba(29,179,116,0.35)}
+.ex-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.ex-row::-webkit-scrollbar{display:none}
+.ex-tag{font-size:12px;padding:5px 11px;border-radius:var(--r-sm);border:0.5px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.ex-tag:active{background:var(--surface2)}
+
+/* ── SCREEN 2: RESULTS ────────────────────────────────── */
+#results-area .empty{text-align:center;padding:40px 20px;color:var(--text3)}
+#results-area .empty svg{width:48px;height:48px;stroke:var(--text3);margin-bottom:12px}
+
+/* result card */
+.result-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.result-name{font-size:17px;font-weight:600;letter-spacing:-0.3px}
+.result-meta{font-size:11px;color:var(--text2);margin-top:3px}
+.score-circle{width:52px;height:52px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.score-num{font-size:18px;font-weight:700;line-height:1}
+.score-lbl{font-size:9px;font-weight:500;margin-top:1px}
+
+.tab-strip{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:0.5px solid var(--border);margin:-14px -16px 14px;padding:0 16px}
+.tab-strip::-webkit-scrollbar{display:none}
+.r-tab{padding:10px 14px;font-size:12px;font-weight:500;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;flex-shrink:0;background:none;border-top:none;border-left:none;border-right:none}
+.r-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.r-pane{display:none}
+.r-pane.active{display:block}
+
+.fw-score-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.fw-score-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.fw-score-lbl{font-size:12px;font-weight:500;width:80px;flex-shrink:0}
+.fw-score-bar-bg{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.fw-score-bar{height:100%;border-radius:3px;transition:width 0.5s ease}
+.fw-score-pct{font-size:12px;font-weight:600;width:26px;text-align:right;flex-shrink:0}
+
+.metric-item{padding:8px 0;border-bottom:0.5px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.metric-item:last-child{border-bottom:none}
+.metric-left{flex:1}
+.metric-name{font-size:12px;font-weight:500}
+.metric-note{font-size:11px;color:var(--text2);margin-top:2px}
+.metric-val{font-size:12px;font-weight:600;text-align:right;white-space:nowrap}
+
+.signal-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.sig-chip{font-size:11px;padding:3px 9px;border-radius:12px;border:0.5px solid var(--border2);display:flex;align-items:center;gap:4px}
+.dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.dot-g{background:var(--green)}
+.dot-r{background:var(--red)}
+.dot-y{background:var(--gold)}
+
+.view-item{padding:10px 0;border-bottom:0.5px solid var(--border);display:flex;gap:8px;font-size:12px;color:var(--text2)}
+.view-item:last-child{border-bottom:none}
+.vi-icon{flex-shrink:0;margin-top:1px;font-size:13px}
+
+/* ── SCREEN 3: HISTORY ────────────────────────────────── */
+.hist-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--border);cursor:pointer}
+.hist-item:last-child{border-bottom:none}
+.hist-ticker{font-size:15px;font-weight:600;width:90px;flex-shrink:0}
+.hist-score{font-size:13px;font-weight:600}
+.hist-meta{flex:1;font-size:11px;color:var(--text2);margin-top:2px}
+.hist-right{font-size:11px;color:var(--text3);flex-shrink:0}
+.hist-empty{text-align:center;padding:40px 0;color:var(--text3);font-size:13px}
+
+/* ── SCREEN 4: SETTINGS ────────────────────────────────── */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:0.5px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-lbl{font-size:13px;font-weight:500}
+.setting-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.toggle{width:44px;height:26px;border-radius:13px;background:var(--surface2);border:0.5px solid var(--border2);cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.toggle.on::after{transform:translateX(18px)}
+
+/* loading overlay */
+#loading{position:fixed;inset:0;background:rgba(10,15,30,0.85);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:100;backdrop-filter:blur(4px)}
+#loading.show{display:flex}
+#loading-msg{font-size:13px;color:var(--text2);text-align:center;max-width:220px}
+#loading-step{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* result rendered prose */
+.prose{font-size:13px;color:var(--text2);line-height:1.65}
+.prose strong{color:var(--text);font-weight:500}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div>
+      <div id="topbar-title">Indian Equity Screener</div>
+      <div id="topbar-sub">6-framework analysis</div>
+    </div>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- ═══ SCREEN: ANALYSE ═══ -->
+    <div id="screen-analyse" class="screen active">
+
+      <div class="card">
+        <div class="card-title">Frameworks</div>
+        <div class="fw-grid" id="fwGrid">
+          <span class="fw-chip on-B" data-fw="B" onclick="toggleFw(this)">Buffett</span>
+          <span class="fw-chip on-L" data-fw="L" onclick="toggleFw(this)">Lynch</span>
+          <span class="fw-chip on-G" data-fw="G" onclick="toggleFw(this)">Graham</span>
+          <span class="fw-chip on-Gn" data-fw="Gn" onclick="toggleFw(this)">Greenblatt</span>
+          <span class="fw-chip on-P" data-fw="P" onclick="toggleFw(this)">Piotroski</span>
+          <span class="fw-chip on-AV" data-fw="AV" onclick="toggleFw(this)">Avishek</span>
+        </div>
+        <div style="margin-top:10px">
+          <div class="card-title" style="margin-bottom:6px">Presets</div>
+          <div class="preset-row">
+            <span class="preset active" data-p="all" onclick="applyPreset(this)">All</span>
+            <span class="preset" data-p="compounder" onclick="applyPreset(this)">Compounder</span>
+            <span class="preset" data-p="qfv" onclick="applyPreset(this)">Quality value</span>
+            <span class="preset" data-p="graham" onclick="applyPreset(this)">Deep value</span>
+            <span class="preset" data-p="turnaround" onclick="applyPreset(this)">Turnaround</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px">Analysis depth</div>
+        <div class="depth-row">
+          <div class="depth-btn" data-d="quick" onclick="setDepth(this)">Quick</div>
+          <div class="depth-btn active" data-d="deep" onclick="setDepth(this)">Deep dive</div>
+          <div class="depth-btn" data-d="compare" onclick="setDepth(this)">Compare</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px">Stock ticker</div>
+        <input id="tickerInput" class="input" placeholder="e.g. IEX, RELIANCE, DBOL…"
+          oninput="document.getElementById('errMsg').textContent=''"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();runAnalysis()}">
+        <div id="errMsg" style="font-size:11px;color:var(--red);min-height:16px;margin-top:5px"></div>
+        <div style="margin-top:10px">
+          <div class="card-title" style="margin-bottom:6px">Try an example</div>
+          <div class="ex-row">
+            <span class="ex-tag" onclick="setTick('IEX')">IEX</span>
+            <span class="ex-tag" onclick="setTick('DBOL')">DBOL</span>
+            <span class="ex-tag" onclick="setTick('WEBELSOLAR')">Websol</span>
+            <span class="ex-tag" onclick="setTick('SUZLON')">Suzlon</span>
+            <span class="ex-tag" onclick="setTick('RELAXO')">Relaxo</span>
+            <span class="ex-tag" onclick="setTick('PIDILITIND')">Pidilite</span>
+            <span class="ex-tag" onclick="setTick('TCS')">TCS</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="runAnalysis()" id="analyseBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Analyse
+      </button>
+    </div>
+
+    <!-- ═══ SCREEN: RESULTS ═══ -->
+    <div id="screen-results" class="screen">
+      <div id="results-area">
+        <div class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v18H3z" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <div style="font-size:14px;font-weight:500;margin-bottom:6px">No analysis yet</div>
+          <div style="font-size:12px">Go to Analyse, pick a ticker, and tap Analyse.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN: HISTORY ═══ -->
+    <div id="screen-history" class="screen">
+      <div class="card-title" style="margin-bottom:14px">Recent analyses</div>
+      <div id="histList"></div>
+    </div>
+
+    <!-- ═══ SCREEN: SETTINGS ═══ -->
+    <div id="screen-settings" class="screen">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0">App</div>
+        <div class="setting-row">
+          <div><div class="setting-lbl">Web search</div><div class="setting-sub">Live data from Screener.in & Tickertape</div></div>
+          <div class="toggle on" id="tog-search" onclick="toggleSetting('search',this)"></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-lbl">Save history</div><div class="setting-sub">Store recent analyses on this device</div></div>
+          <div class="toggle on" id="tog-history" onclick="toggleSetting('history',this)"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0">Default frameworks</div>
+        <div class="setting-row">
+          <div><div class="setting-lbl">Buffett</div></div>
+          <div class="toggle on" id="tog-fw-B" onclick="toggleFwSetting('B',this)"></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-lbl">Lynch</div></div>
+          <div class="toggle on" id="tog-fw-L" onclick="toggleFwSetting('L',this)"></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-lbl">Graham</div></div>
+          <div class="toggle on" id="tog-fw-G" onclick="toggleFwSetting('G',this)"></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-lbl">Greenblatt</div></div>
+          <div class="toggle on" id="tog-fw-Gn" onclick="toggleFwSetting('Gn',this)"></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-lbl">Piotroski</div></div>
+          <div class="toggle on" id="tog-fw-P" onclick="toggleFwSetting('P',this)"></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-lbl">Avishek</div></div>
+          <div class="toggle on" id="tog-fw-AV" onclick="toggleFwSetting('AV',this)"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:4px">About</div>
+        <div class="prose">
+          <strong>Indian Equity Screener</strong> — 6-framework fundamental analysis engine.<br><br>
+          Frameworks: Buffett (moat/ROE/FCF), Lynch (PEG/category), Graham (net-net/value), Greenblatt (Magic Formula), Piotroski (F-Score 0–9), Avishek (cash-flow-first/durability).<br><br>
+          Data sourced live from Screener.in, Tickertape, NSE, and other public sources.<br><br>
+          <span style="color:var(--red)">Not investment advice. For educational use only. Always verify figures independently before making any investment decision.</span>
+        </div>
+      </div>
+
+      <button class="btn btn-outline" onclick="clearHistory()" style="margin-top:4px">Clear all history</button>
+    </div>
+
+  </div><!-- end #content -->
+
+  <!-- BOTTOM NAV -->
+  <div id="bottomnav">
+    <button class="nav-btn active" onclick="navigate('analyse',this)">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      Analyse
+    </button>
+    <button class="nav-btn" onclick="navigate('results',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Results
+    </button>
+    <button class="nav-btn" onclick="navigate('history',this)">
+      <svg viewBox="0 0 24 24"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4.5"/><polyline points="3 3 3 7 7 7"/></svg>
+      History
+    </button>
+    <button class="nav-btn" onclick="navigate('settings',this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </div>
+</div><!-- end #app -->
+
+<!-- LOADING OVERLAY -->
+<div id="loading">
+  <div class="spinner"></div>
+  <div>
+    <div id="loading-msg">Fetching live data…</div>
+    <div id="loading-step"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+const PRESETS = {
+  all:       {B:1,L:1,G:1,Gn:1,P:1,AV:1},
+  compounder:{B:1,L:1,G:0,Gn:1,P:1,AV:1},
+  qfv:       {B:1,L:1,G:1,Gn:1,P:0,AV:1},
+  graham:    {B:0,L:0,G:1,Gn:0,P:1,AV:0},
+  turnaround:{B:0,L:1,G:1,Gn:0,P:1,AV:1}
+};
+const FW_LABELS = {B:'Buffett',L:'Lynch',G:'Graham',Gn:'Greenblatt',P:'Piotroski',AV:'Avishek'};
+const FW_COLORS = {B:'#4a8ef5',L:'#1db374',G:'#f5c842',Gn:'#9f7aea',P:'#e85555',AV:'#8b96a8'};
+let activeFw  = {B:1,L:1,G:1,Gn:1,P:1,AV:1};
+let depth     = 'deep';
+let settings  = {search:true,history:true};
+let history_  = JSON.parse(localStorage.getItem('screener_history')||'[]');
+let lastResult= null;
+
+// ── NAVIGATION ─────────────────────────────────────────
+function navigate(id, btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='history') renderHistory();
+  if(id==='results' && lastResult) {/* already rendered */}
+}
+
+// ── FRAMEWORK TOGGLES ──────────────────────────────────
+function toggleFw(chip){
+  const fw=chip.dataset.fw;
+  activeFw[fw]=activeFw[fw]?0:1;
+  chip.className='fw-chip'+(activeFw[fw]?' on-'+fw:'');
+  document.querySelectorAll('.preset').forEach(p=>p.classList.remove('active'));
+}
+function applyPreset(btn){
+  const p=PRESETS[btn.dataset.p];
+  activeFw={...p};
+  document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.fw-chip').forEach(c=>{
+    const fw=c.dataset.fw;
+    c.className='fw-chip'+(activeFw[fw]?' on-'+fw:'');
+  });
+}
+function setDepth(btn){
+  document.querySelectorAll('.depth-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  depth=btn.dataset.d;
+  document.getElementById('tickerInput').placeholder =
+    depth==='compare' ? 'e.g. IEX vs SUZLON' : 'e.g. IEX, RELIANCE, DBOL…';
+}
+function setTick(t){ document.getElementById('tickerInput').value=t; }
+
+// ── SETTINGS ───────────────────────────────────────────
+function toggleSetting(k,tog){
+  settings[k]=!settings[k];
+  tog.classList.toggle('on',settings[k]);
+}
+function toggleFwSetting(fw,tog){
+  activeFw[fw]=activeFw[fw]?0:1;
+  tog.classList.toggle('on',!!activeFw[fw]);
+  const chip=document.querySelector(`.fw-chip[data-fw="${fw}"]`);
+  if(chip) chip.className='fw-chip'+(activeFw[fw]?' on-'+fw:'');
+}
+
+// ── HISTORY ────────────────────────────────────────────
+function renderHistory(){
+  const el=document.getElementById('histList');
+  if(!history_.length){
+    el.innerHTML='<div class="hist-empty">No analyses yet.<br>Run your first one from Analyse.</div>';
+    return;
+  }
+  el.innerHTML=history_.slice().reverse().map((h,i)=>`
+    <div class="hist-item" onclick="loadHistory(${history_.length-1-i})">
+      <div>
+        <div class="hist-ticker">${h.ticker}</div>
+        <div class="hist-right" style="font-size:11px;color:var(--text3)">${h.date}</div>
+      </div>
+      <div style="flex:1">
+        <div class="hist-meta">${h.company||''}</div>
+        <div class="hist-meta" style="margin-top:2px">${h.frameworks||''}</div>
+      </div>
+      <div class="hist-score" style="color:${scoreColor(h.score)}">${h.score}</div>
+    </div>`).join('');
+}
+function loadHistory(idx){
+  const h=history_[idx];
+  if(!h||!h.result) return;
+  lastResult=h.result;
+  renderResult(h.result);
+  navigate('results', document.querySelectorAll('.nav-btn')[1]);
+}
+function clearHistory(){
+  history_=[];
+  localStorage.removeItem('screener_history');
+  showToast('History cleared');
+  renderHistory();
+}
+function saveToHistory(ticker,company,frameworks,score,result){
+  if(!settings.history) return;
+  const entry={ticker,company,frameworks,score,result,date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'})};
+  history_.push(entry);
+  if(history_.length>20) history_.shift();
+  localStorage.setItem('screener_history',JSON.stringify(history_));
+}
+
+// ── TOAST ──────────────────────────────────────────────
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── LOADING MESSAGES ───────────────────────────────────
+const LOAD_MSGS=[
+  ['Searching Screener.in…','Fetching financial data'],
+  ['Checking Tickertape…','Cross-verifying numbers'],
+  ['Running framework analysis…','Scoring 6 frameworks'],
+  ['Computing weighted score…','Finalising report'],
+];
+let loadTimer=null;
+function startLoadingAnim(){
+  let i=0;
+  document.getElementById('loading-msg').textContent=LOAD_MSGS[0][0];
+  document.getElementById('loading-step').textContent=LOAD_MSGS[0][1];
+  loadTimer=setInterval(()=>{
+    i=(i+1)%LOAD_MSGS.length;
+    document.getElementById('loading-msg').textContent=LOAD_MSGS[i][0];
+    document.getElementById('loading-step').textContent=LOAD_MSGS[i][1];
+  },2800);
+}
+function stopLoadingAnim(){
+  clearInterval(loadTimer);
+  document.getElementById('loading').classList.remove('show');
+}
+
+// ── SCORE HELPERS ──────────────────────────────────────
+function scoreColor(s){
+  if(s>=75) return '#1db374';
+  if(s>=55) return '#4a8ef5';
+  if(s>=40) return '#f5c842';
+  return '#e85555';
+}
+function gradeLabel(s){
+  if(s>=85) return 'A+'; if(s>=80) return 'A'; if(s>=75) return 'B+';
+  if(s>=65) return 'B';  if(s>=55) return 'C+';if(s>=45) return 'C'; return 'D';
+}
+
+// ── MAIN ANALYSIS ──────────────────────────────────────
+async function runAnalysis(){
+  const raw=document.getElementById('tickerInput').value.trim().toUpperCase();
+  if(!raw){ document.getElementById('errMsg').textContent='Enter a ticker first.'; return; }
+  const fwList=Object.entries(activeFw).filter(([,v])=>v).map(([k])=>k);
+  if(!fwList.length){ document.getElementById('errMsg').textContent='Select at least one framework.'; return; }
+
+  document.getElementById('loading').classList.add('show');
+  startLoadingAnim();
+  document.getElementById('analyseBtn').disabled=true;
+
+  const fwDescriptions={
+    B:'Buffett: durable moat, ROE>15%, consistent FCF, low debt, predictable earnings, owner earnings',
+    L:'Peter Lynch: PEG ratio, growth category (slow/stalwart/fast grower/cyclical/turnaround/asset play), EPS growth vs P/E',
+    G:'Graham: P/E<15, P/B<1.5, P/E×P/B<22.5, current ratio>2, LT debt<working capital, EPS stability, dividend history',
+    Gn:'Greenblatt Magic Formula: earnings yield (EBIT/EV) + return on capital (EBIT/NWC+FixedAssets)',
+    P:'Piotroski F-Score: 9 binary signals — profitability (ROA,CFO,ΔROA,accruals), leverage (ΔLeverage,ΔCurrentRatio,dilution), efficiency (ΔGrossMargin,ΔAssetTurnover)',
+    AV:'Avishek: cash-flow-first (CFO/PAT>80%), ROCE>15% improving trend, D/E<1, promoter stability, FII/DII trend, durability score, Trendlyne red flags'
+  };
+  const activeDesc=fwList.map(fw=>fwDescriptions[fw]).join('\n');
+
+  let prompt='';
+  if(depth==='compare'){
+    const parts=raw.split(/\s+VS\s+/);
+    if(parts.length<2){
+      stopLoadingAnim();
+      document.getElementById('analyseBtn').disabled=false;
+      document.getElementById('errMsg').textContent='Compare format: TICKER1 vs TICKER2';
+      return;
+    }
+    prompt=`Compare ${parts[0]} vs ${parts[1]} using frameworks: ${fwList.map(f=>FW_LABELS[f]).join(', ')}. Search live data from Screener.in and Tickertape. Return ONLY JSON (no markdown): {"ticker":"${raw}","company":"${parts[0]} vs ${parts[1]}","sector":"Comparison","overall_score":70,"snapshot":{"cmp":"See below","mcap":"—","pe":"—","pb":"—","roce":"—","roe":"—","de":"—","fcf":"—"},"frameworks":{},"strengths":["${parts[0]} leads on X","${parts[1]} leads on Y","Common: Z"],"watch_points":["Risk A","Risk B"],"one_to_track":"What to monitor","data_note":"Sources used"}. In frameworks, include each active fw (${fwList.join(',')}) with score 0-100, verdict, and 4-6 metrics each with name/value/flag(pass|warn|fail)/note. Include a comparison summary.`;
+  } else if(depth==='quick'){
+    prompt=`Quick fundamental take on ${raw} using frameworks: ${fwList.map(f=>FW_LABELS[f]).join(', ')}. Search Screener.in and Tickertape. Return ONLY valid JSON (no markdown, no backticks): {"ticker":"NSE:${raw}","company":"Full Name","sector":"Sector","overall_score":65,"snapshot":{"cmp":"₹XX","mcap":"₹XX Cr","pe":"XX","pb":"X.X","roce":"XX%","roe":"XX%","de":"X.X","fcf":"Positive/Negative"},"frameworks":{${fwList.map(fw=>`"${fw}":{"score":60,"label":"${FW_LABELS[fw]}","verdict":"one sentence","metrics":[{"name":"Key metric","value":"XX","flag":"pass","note":"context"}],"signals":[],"red_flags":[]}`).join(',')}},"strengths":["S1","S2","S3"],"watch_points":["W1","W2"],"one_to_track":"Metric to watch","data_note":"Data sources"}`;
+  } else {
+    prompt=`Full deep-dive on ${raw} using: ${activeDesc}. Search live data from Screener.in and Tickertape (cross-check). Return ONLY valid JSON (no markdown, no backticks): {"ticker":"NSE:${raw}","company":"Full Company Name","sector":"Sector Name","overall_score":65,"snapshot":{"cmp":"₹XX","mcap":"₹XX Cr","pe":"XX.X","pb":"X.X","roce":"XX%","roe":"XX%","de":"X.X","fcf":"Positive/Negative"},"frameworks":{${fwList.map(fw=>`"${fw}":{"score":70,"label":"${FW_LABELS[fw]}","color":"${FW_COLORS[fw]}","verdict":"one line verdict","metrics":[{"name":"ROE 3yr","value":"18%","flag":"pass","note":"above threshold"},{"name":"D/E","value":"0.4x","flag":"pass","note":"conservative"},{"name":"FCF","value":"₹240 Cr","flag":"warn","note":"declining"},{"name":"Moat","value":"Moderate","flag":"warn","note":"context"},{"name":"Earnings consistency","value":"8/10 yrs","flag":"pass","note":"stable"}],"signals":["Strength 1","Strength 2"],"red_flags":["Risk 1"]}`).join(',')}},"strengths":["Evidence-backed strength 1","Evidence-backed strength 2","Evidence-backed strength 3"],"watch_points":["Risk with data","Risk with data"],"one_to_track":"Specific metric/event to monitor quarterly","data_note":"Key figures from Screener.in and Tickertape"}. Use REAL numbers for ${raw}. Flag missing data as unavailable.`;
+  }
+
+  try {
+    const tools=settings.search?[{type:'web_search_20250305',name:'web_search'}]:[];
+    const body={model:'claude-sonnet-4-6',max_tokens:3500,messages:[{role:'user',content:prompt}]};
+    if(tools.length) body.tools=tools;
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    const data=await resp.json();
+    if(data.error) throw new Error(data.error.message);
+
+    let jsonStr='';
+    for(const block of data.content){ if(block.type==='text') jsonStr+=block.text; }
+    jsonStr=jsonStr.replace(/```json|```/g,'').trim();
+    const s=jsonStr.indexOf('{'), e=jsonStr.lastIndexOf('}');
+    if(s===-1||e===-1) throw new Error('No JSON in response');
+    const result=JSON.parse(jsonStr.slice(s,e+1));
+    lastResult=result;
+
+    const fwNames=fwList.map(f=>FW_LABELS[f]).join(', ');
+    saveToHistory(raw, result.company||raw, fwNames, result.overall_score||0, result);
+    renderResult(result);
+
+    navigate('results', document.querySelectorAll('.nav-btn')[1]);
+    showToast('Analysis complete');
+
+  } catch(err){
+    stopLoadingAnim();
+    document.getElementById('analyseBtn').disabled=false;
+    document.getElementById('errMsg').textContent=err.message||'Analysis failed. Please try again.';
+    return;
+  }
+  stopLoadingAnim();
+  document.getElementById('analyseBtn').disabled=false;
+}
+
+// ── RENDER RESULT ──────────────────────────────────────
+function renderResult(r){
+  const score=r.overall_score||0;
+  const sc=scoreColor(score);
+  const gl=gradeLabel(score);
+  const fws=r.frameworks||{};
+  const fwKeys=Object.keys(fws);
+
+  const snap=r.snapshot||{};
+  const snapItems=[
+    ['CMP',snap.cmp||'—'],['MCap',snap.mcap||'—'],['P/E',snap.pe||'—'],['P/B',snap.pb||'—'],
+    ['ROCE',snap.roce||'—'],['ROE',snap.roe||'—'],['D/E',snap.de||'—'],['FCF',snap.fcf||'—']
+  ];
+
+  // build tabs
+  let tabsHtml=`<div class="tab-strip">
+    <button class="r-tab active" onclick="rTab(this,'snap')">Snapshot</button>
+    ${fwKeys.map(fw=>`<button class="r-tab" onclick="rTab(this,'fw-${fw}')">${FW_LABELS[fw]||fw}</button>`).join('')}
+    <button class="r-tab" onclick="rTab(this,'view')">View</button>
+  </div>`;
+
+  // snapshot pane
+  let snapPane=`<div id="rp-snap" class="r-pane active">
+    <div class="g4" style="margin-bottom:12px">
+      ${snapItems.map(([l,v])=>`<div class="kc"><div class="kc-lbl">${l}</div><div class="kc-val" style="font-size:13px">${v}</div></div>`).join('')}
+    </div>
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:8px">Framework scores</div>
+    ${fwKeys.map(fw=>{
+      const f=fws[fw]; const s=f.score||0; const col=f.color||FW_COLORS[fw]||'#8b96a8';
+      return `<div class="fw-score-row">
+        <div class="fw-score-dot" style="background:${col}"></div>
+        <div class="fw-score-lbl">${f.label||FW_LABELS[fw]||fw}</div>
+        <div class="fw-score-bar-bg"><div class="fw-score-bar" style="width:${s}%;background:${col}"></div></div>
+        <div class="fw-score-pct" style="color:${col}">${s}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // framework panes
+  let fwPanes=fwKeys.map(fw=>{
+    const f=fws[fw]; const col=f.color||FW_COLORS[fw]||'#8b96a8'; const s=f.score||0;
+    const metrics=(f.metrics||[]).map(m=>`
+      <div class="metric-item">
+        <div class="metric-left">
+          <div class="metric-name">${m.name}</div>
+          <div class="metric-note">${m.note||''}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="metric-val">${m.value}</div>
+          <span class="flag ${m.flag==='pass'?'f-pass':m.flag==='warn'?'f-warn':'f-fail'}">${m.flag==='pass'?'Pass':m.flag==='warn'?'Watch':'Fail'}</span>
+        </div>
+      </div>`).join('');
+    const sigs=[...(f.signals||[]).map(s=>`<div class="sig-chip"><div class="dot dot-g"></div>${s}</div>`),
+                ...(f.red_flags||[]).map(r=>`<div class="sig-chip"><div class="dot dot-r"></div>${r}</div>`)].join('');
+    return `<div id="rp-fw-${fw}" class="r-pane">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px">
+          <div style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0"></div>
+          ${f.label||FW_LABELS[fw]||fw}
+        </div>
+        <div style="font-size:20px;font-weight:700;color:${col}">${s}</div>
+      </div>
+      <div class="prose" style="margin-bottom:12px;padding-left:17px;border-left:2px solid ${col}">${f.verdict||''}</div>
+      ${metrics}
+      ${sigs?`<div class="signal-chips">${sigs}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // view pane
+  let viewPane=`<div id="rp-view" class="r-pane">
+    <div style="font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px">What works</div>
+    ${(r.strengths||[]).map(s=>`<div class="view-item"><div class="vi-icon" style="color:var(--green)">+</div><div>${s}</div></div>`).join('')}
+    <div style="font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:0.7px;margin:12px 0 8px">Watch points</div>
+    ${(r.watch_points||[]).map(w=>`<div class="view-item"><div class="vi-icon" style="color:var(--red)">!</div><div>${w}</div></div>`).join('')}
+    ${r.one_to_track?`<div style="font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:0.7px;margin:12px 0 8px">Track quarterly</div>
+    <div class="view-item"><div class="vi-icon" style="color:var(--blue)">◎</div><div>${r.one_to_track}</div></div>`:''}
+    <div class="divider"></div>
+    <div style="font-size:11px;color:var(--text3);line-height:1.6">${r.data_note||'Data from public sources.'}</div>
+    <div class="divider"></div>
+    <div style="font-size:11px;color:var(--red);line-height:1.6">This is a view of the fundamentals for educational purposes — not investment advice and not a buy/sell/hold recommendation. Verify figures independently.</div>
+  </div>`;
+
+  const html=`<div class="card">
+    <div class="result-hdr">
+      <div style="flex:1">
+        <div class="result-name">${r.company||r.ticker}</div>
+        <div class="result-meta">${r.ticker||''} · ${r.sector||'Equity'}</div>
+      </div>
+      <div class="score-circle" style="background:${sc}22;border:2px solid ${sc}40">
+        <div class="score-num" style="color:${sc}">${score}</div>
+        <div class="score-lbl" style="color:${sc}">${gl}</div>
+      </div>
+    </div>
+    ${tabsHtml}
+    ${snapPane}
+    ${fwPanes}
+    ${viewPane}
+  </div>`;
+
+  document.getElementById('results-area').innerHTML=html;
+}
+
+function rTab(btn, id){
+  document.querySelectorAll('.r-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.r-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('rp-'+id).classList.add('active');
+}
+
+// ── SERVICE WORKER ─────────────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
